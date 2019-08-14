@@ -15,22 +15,22 @@
 # limitations under the License.
 
 import logging
+import json
 import posixpath
 import requests
 import threading
 import urllib
 
-from urlparse import urlparse
 
 from django.utils.encoding import iri_to_uri, smart_str
 from django.utils.http import urlencode
-
-from desktop import conf
-
 from requests import exceptions
 from requests.auth import AuthBase ,HTTPBasicAuth, HTTPDigestAuth
 from requests_kerberos import HTTPKerberosAuth, REQUIRED, OPTIONAL, DISABLED
 from urllib3.contrib import pyopenssl
+from urlparse import urlparse
+
+from desktop import conf
 
 
 pyopenssl.DEFAULT_SSL_CIPHER_LIST = conf.SSL_CIPHER_LIST.get()
@@ -71,7 +71,11 @@ class RestException(Exception):
     try:
       self._code = error.response.status_code
       self._headers = error.response.headers
-      self._message = self._message + '\n' + self._error.response.text
+      try:
+        json.loads(self._error.response.text) # Check if response is clean json
+        self._message = self._error.response.text
+      except:
+        self._message = self._message + '\n' + self._error.response.text
     except AttributeError:
       pass
 
